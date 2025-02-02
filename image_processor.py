@@ -68,6 +68,46 @@ class ImageProcessor:
         merged_image.save(output_path)
         print(f"已合并图片到: {output_path}")
 
+    def slice_long_image(self, image_path: str, slice_height: int) -> None:
+        """将长图切成多个等高的图片片段
+        
+        Args:
+            image_path: 要切片的图片路径
+            slice_height: 每个切片的目标高度（像素）
+        """
+        try:
+            # 打开原图
+            with Image.open(image_path) as img:
+                # 获取原图尺寸
+                width, height = img.size
+                
+                # 计算需要切成几片
+                num_slices = (height + slice_height - 1) // slice_height
+                
+                # 获取文件名和扩展名
+                base_name = os.path.splitext(image_path)[0]
+                ext = os.path.splitext(image_path)[1]
+                
+                # 切片并保存
+                for i in range(num_slices):
+                    top = i * slice_height
+                    bottom = min((i + 1) * slice_height, height)
+                    
+                    # 切出当前片段
+                    slice_img = img.crop((0, top, width, bottom))
+                    
+                    # 生成输出文件名
+                    output_path = f"{base_name}_切片_{str(i+1).zfill(2)}{ext}"
+                    
+                    # 保存切片
+                    slice_img.save(output_path)
+                    print(f"已保存切片: {output_path}")
+                
+                print(f"切片完成，共生成 {num_slices} 个切片")
+                
+        except Exception as e:
+            raise Exception(f"切片过程出错: {str(e)}")
+
 # 使用示例
 if __name__ == "__main__":
     processor = ImageProcessor("./images")  # 指定输入图片目录

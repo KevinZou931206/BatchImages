@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from image_processor import ImageProcessor
+import os
 
 class ImageProcessorGUI:
     def __init__(self, root):
@@ -53,9 +54,20 @@ class ImageProcessorGUI:
         ttk.Entry(merge_frame, textvariable=self.output_path, width=40).grid(row=0, column=1, padx=5)
         ttk.Button(merge_frame, text="合并图片", command=self.merge_images).grid(row=0, column=2, padx=5)
         
-        # 状态栏
+        # 在合并图片设置后添加切片功能
+        slice_frame = ttk.LabelFrame(self.main_frame, text="长图切片", padding="5")
+        slice_frame.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=10)
+        
+        ttk.Label(slice_frame, text="目标高度:").grid(row=0, column=0, sticky=tk.W)
+        self.slice_height = tk.StringVar(value="1000")
+        ttk.Entry(slice_frame, textvariable=self.slice_height, width=10).grid(row=0, column=1, padx=5)
+        ttk.Label(slice_frame, text="像素").grid(row=0, column=2, sticky=tk.W)
+        
+        ttk.Button(slice_frame, text="选择长图", command=self.select_image_to_slice).grid(row=0, column=3, padx=5)
+        
+        # 状态栏移到最后一行
         self.status_var = tk.StringVar()
-        ttk.Label(self.main_frame, textvariable=self.status_var).grid(row=4, column=0, columnspan=3, pady=10)
+        ttk.Label(self.main_frame, textvariable=self.status_var).grid(row=5, column=0, columnspan=3, pady=10)
 
     def select_directory(self):
         directory = filedialog.askdirectory()
@@ -102,6 +114,30 @@ class ImageProcessorGUI:
             messagebox.showinfo("成功", "图片合并完成！")
         except Exception as e:
             messagebox.showerror("错误", str(e))
+
+    def select_image_to_slice(self):
+        """选择要切片的图片"""
+        file_path = filedialog.askopenfilename(
+            filetypes=[("图片文件", "*.jpg;*.jpeg;*.png")],
+            title="选择要切片的长图"
+        )
+        if file_path:
+            try:
+                height = int(self.slice_height.get())
+                if height <= 0:
+                    raise ValueError("切片高度必须大于0")
+                
+                # 如果没有选择目录，使用图片所在目录
+                if self.processor is None:
+                    self.processor = ImageProcessor(os.path.dirname(file_path))
+                
+                self.processor.slice_long_image(file_path, height)
+                self.status_var.set("切片完成")
+                messagebox.showinfo("成功", "长图切片完成！")
+            except ValueError as e:
+                messagebox.showerror("错误", "请输入有效的切片高度！")
+            except Exception as e:
+                messagebox.showerror("错误", str(e))
 
     def check_processor(self):
         if self.processor is None:
